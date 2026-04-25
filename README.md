@@ -9,6 +9,7 @@ surface — or whether it should **not be automated at all**.
 
 Most teams ask, "How do we add AI?" Decyde asks the harder question:
 *should AI exist here at all?*
+<img width="1920" height="939" alt="Screenshot 2026-04-25 150925" src="https://github.com/user-attachments/assets/9183ae12-4442-4567-8354-09b23f38be32" />
 
 ---
 
@@ -40,7 +41,8 @@ investment. It turns a messy workflow description into:
   Close, Recruiting.
 - Clean dark SaaS UI — black background, electric cyan accent, plain
   Tailwind.
-- Vercel-ready, GitHub-portfolio-ready.
+- Vercel-ready, GitHub-portfolio-ready.<img width="1920" height="938" alt="Screenshot 2026-04-25 151033" src="https://github.com/user-attachments/assets/17ed0438-98aa-466a-b00f-37b20a41d0dc" />
+
 
 ---
 
