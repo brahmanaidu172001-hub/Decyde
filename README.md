@@ -1,6 +1,5 @@
 # Decyde
 
-Decide if AI should exist before you build it.
 <img width="1920" height="939" alt="Screenshot 2026-04-25 150925" src="https://github.com/user-attachments/assets/f2a0f671-2abc-44ba-8e72-b3ddf4b3ae9b" />
 
 Decyde is an AI Deployment Intelligence System. You describe a real-worldbusiness workflow, and Decyde tells you whether it should become an AIAgent, a Copilot, a Workflow Automation, an Analytics-Onlysurface — or whether it should not be automated at all.
