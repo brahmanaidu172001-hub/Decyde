@@ -2,104 +2,57 @@
 
 **Decide if AI should exist before you build it.**
 
-Decyde is a production-grade AI Deployment Intelligence System. You give it a
-real-world workflow, and it decides whether that workflow should become an
-**AI Agent**, a **Copilot**, a **Workflow Automation**, an **Analytics-Only**
+Decyde is an AI Deployment Intelligence System. You describe a real-world
+business workflow, and Decyde tells you whether it should become an **AI
+Agent**, a **Copilot**, a **Workflow Automation**, an **Analytics-Only**
 surface — or whether it should **not be automated at all**.
 
-Most "AI strategy" tools sell you AI. Decyde is built to be skeptical. It thinks
-like a senior AI Product Manager, a Systems Architect, an Operations Strategist,
-and a Risk & Governance reviewer all at once — and it refuses to blindly
-recommend AI when a simpler answer fits.
+Most teams ask, "How do we add AI?" Decyde asks the harder question:
+*should AI exist here at all?*
 
 ---
 
-## Why It Matters
+## Why it matters
 
-Companies are spending billions on "AI transformation" without ever asking the
-prior question: *should this workflow be AI in the first place?* A huge share of
-AI projects stall or get shut down because they were built on a weak premise —
-low volume, unacceptable blast radius, no measurable ROI, or a deterministic
-solution that would have worked better.
-
-Decyde is the **decision-grade review layer** that belongs in front of every AI
+A significant share of AI projects stall or get shut down because they were
+built on a weak premise — low volume, unacceptable blast radius, no
+measurable ROI, or a deterministic solution that would have worked better.
+Decyde is the decision-grade review layer that belongs in front of every AI
 investment. It turns a messy workflow description into:
 
 - A calibrated **AI Fit Score** (0–100)
-- A concrete **recommendation** with a justification you can defend in a steering
-  committee
-- A ranked list of **bottlenecks, decision points, risks, and guardrails**
-- An **ROI estimate** (hours saved, cost impact, complexity, adoption risk)
-- A **PM-ready PRD** with user stories, success metrics, an MVP roadmap, and
-  prioritized backlog
-
-It is built to be shown to hiring managers, demoed live, and shipped.
+- A concrete **recommended approach** with a defensible justification
+- A short list of **bottlenecks, risks, and guardrails**
+- An **ROI / impact** read
+- An ordered **MVP roadmap**
 
 ---
 
 ## Features
 
-- **Senior-PM persona prompting.** The model is anchored as a product manager,
-  architect, operator, and risk reviewer — not a generic chat assistant.
-- **Strict JSON contract.** The API route validates the model's output against a
-  TypeScript schema; malformed responses are rejected, not rendered.
-- **Dark, premium SaaS UI.** Black + electric-blue, glassmorphism, animated
-  gauge, framer-motion transitions, shadcn/ui primitives.
-- **Split-view workspace.** Input on the left, live dashboard on the right.
-- **One-click sample workflows.** Healthcare Call Center, Finance Month-End
-  Close, and Recruiting — demo-ready.
-- **Graceful error handling.** Missing API key, bad input, upstream errors,
-  timeouts, and parse failures all surface clearly.
-- **Vercel-native.** Deploys with zero config.
+- Senior-PM persona prompting — Claude acts as product manager, automation
+  strategist, risk reviewer, and systems thinker, not a generic chat bot.
+- Anthropic-only backend — single Next.js route, no SDK, no database, no auth.
+- Lenient JSON handling — the UI always renders something: a structured
+  dashboard on success, the raw text on non-JSON output, and a clear error
+  on failure. No infinite loading.
+- One-click sample workflows — Healthcare Call Center, Finance Month-End
+  Close, Recruiting.
+- Clean dark SaaS UI — black background, electric cyan accent, plain
+  Tailwind.
+- Vercel-ready, GitHub-portfolio-ready.
 
 ---
 
-## Architecture
+## Tech stack
 
-```
-User ──▶ DecydeForm (client)
-           │ POST /api/analyze
-           ▼
-      Next.js API Route  ──▶  Anthropic Messages API
-      (Node runtime)           (claude-3-5-sonnet-20241022, fetch-based)
-           │
-           ▼
-      Schema validation (lib/types.ts · isDecydeAnalysis)
-           │
-           ▼
-      ResultsDashboard
-        ├─ ScoreCard         (AI Fit Score, animated ring)
-        ├─ RecommendationCard (AI Agent / Copilot / Automation / …)
-        ├─ WorkflowBreakdown (steps, bottlenecks, decision points)
-        ├─ RiskCard          (risks + guardrails)
-        ├─ ROICard           (hours, $, complexity, adoption)
-        └─ PMOutputCard      (PRD: summary, stories, metrics, roadmap, backlog)
-```
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- Anthropic Messages API via native `fetch`
+- Deployable on Vercel with zero config
 
-**Tech stack:** Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui,
-lucide-react, framer-motion, Anthropic Messages API (via `fetch`).
-
-**Directory layout:**
-
-```
-app/
-  api/analyze/route.ts       # Server-only Anthropic call + JSON validation
-  globals.css                # Tailwind base + Decyde theme tokens
-  layout.tsx                 # Root layout, dark mode
-  page.tsx                   # Home: form + dashboard
-components/
-  DecydeForm.tsx             # Input form + sample workflows
-  ResultsDashboard.tsx       # Composes all result cards
-  ScoreCard.tsx              # Animated AI Fit Score gauge
-  RecommendationCard.tsx     # Recommendation badge + rationale
-  RiskCard.tsx               # Risks + guardrails
-  PMOutputCard.tsx           # PRD output
-  ui/                        # shadcn/ui primitives
-lib/
-  prompt.ts                  # System + user prompts; model config
-  types.ts                   # Shared types + schema guard
-  utils.ts                   # cn(), score color ramp, style helpers
-```
+Model: `claude-3-haiku-20240307`.
 
 ---
 
@@ -108,14 +61,18 @@ lib/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-handle/decyde.git
-cd decyde
+git clone https://github.com/brahmanaidu172001-hub/Decyde.git
+cd Decyde
 npm install
 ```
 
-### 2. Configure environment
+> Tip: keep the repo out of a OneDrive-synced path. OneDrive tries to sync
+> every file in `node_modules/` and will break `npm install` with
+> `ENOTEMPTY` / "Operation not permitted" errors.
 
-Copy the example file and add your Anthropic API key:
+### 2. Create `.env.local`
+
+Copy the template and add your Anthropic API key:
 
 ```bash
 cp .env.example .env.local
@@ -124,12 +81,10 @@ cp .env.example .env.local
 Edit `.env.local`:
 
 ```ini
-ANTHROPIC_API_KEY=your_key_here
-ANTHROPIC_MODEL=claude-3-5-sonnet-20241022   # optional; default is claude-3-5-sonnet-20241022
-ANTHROPIC_TIMEOUT_MS=45000                   # optional
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Get a key at [console.anthropic.com](https://console.anthropic.com/).
+Grab a key at [console.anthropic.com](https://console.anthropic.com/).
 
 ### 3. Run locally
 
@@ -137,7 +92,8 @@ Get a key at [console.anthropic.com](https://console.anthropic.com/).
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and click one of the
+sample buttons to try it.
 
 ### 4. Type-check and build
 
@@ -149,16 +105,14 @@ npm run start
 
 ---
 
-## Environment Variables
+## Environment variables
 
-| Variable               | Required | Default                        | Purpose                                  |
-| ---------------------- | -------- | ------------------------------ | ---------------------------------------- |
-| `ANTHROPIC_API_KEY`    | ✅       | —                              | Server-side Anthropic key                |
-| `ANTHROPIC_MODEL`      | ⛔       | `claude-3-5-sonnet-20241022`   | Override the Claude model                |
-| `ANTHROPIC_TIMEOUT_MS` | ⛔       | `45000`                        | Upstream timeout before returning `504`  |
+| Variable            | Required | Purpose                                 |
+| ------------------- | -------- | --------------------------------------- |
+| `ANTHROPIC_API_KEY` | yes      | Server-side Anthropic Messages API key  |
 
-`ANTHROPIC_API_KEY` is read **only** inside the `/api/analyze` route on the
-server. It is never shipped to the browser.
+The key is read only inside `app/api/analyze/route.ts` on the server. It is
+never shipped to the browser.
 
 ---
 
@@ -166,51 +120,84 @@ server. It is never shipped to the browser.
 
 1. Push this repo to GitHub.
 2. In Vercel: **New Project → Import Git Repository**.
-3. Framework preset is auto-detected as Next.js.
-4. Under **Environment Variables**, add:
-   - `ANTHROPIC_API_KEY` (required)
-   - `ANTHROPIC_MODEL` (optional)
+3. Framework preset is auto-detected as Next.js — keep defaults.
+4. Under **Environment Variables**, add `ANTHROPIC_API_KEY`.
 5. Click **Deploy**. First build takes ~60 seconds.
 6. Your app is live at `https://<project>.vercel.app`.
 
-No additional config is required — the API route uses the Node runtime by
-default and has `dynamic = 'force-dynamic'` set to avoid caching analyses.
+No additional config required. The API route uses the Node runtime and sets
+`dynamic = 'force-dynamic'` to avoid caching analyses.
 
 ---
 
-## Resume Bullet
+## How it works
+
+```
+User ─▶ app/page.tsx
+         │ POST /api/analyze
+         ▼
+     app/api/analyze/route.ts  ──▶  Anthropic Messages API
+     (Node runtime, fetch)          (claude-3-haiku-20240307)
+         │
+         ▼
+     JSON.parse best-effort
+         │
+         ▼
+     { ok, analysis, rawText, warning? }  ─▶  Dashboard
+```
+
+The API route always returns a shaped response:
+
+- On parse success: `{ ok: true, analysis, rawText }`
+- On non-JSON output: `{ ok: true, analysis: null, rawText, warning: "..." }`
+- On failure: `{ ok: false, error: "..." }`
+
+The frontend covers every state: empty, loading, success, raw-fallback, and
+error. A 35-second client-side timeout ensures the spinner always stops.
+
+---
+
+## GitHub portfolio description
+
+> Decyde — an AI Deployment Intelligence System built on Next.js 14 and the
+> Anthropic Messages API. Describe a workflow and Decyde evaluates whether
+> it should become an AI Agent, Copilot, workflow automation, analytics
+> view, or none at all. Opinionated, skeptical, and designed for AI PMs and
+> operations leaders.
+
+---
+
+## Resume bullet
 
 > **Decyde — AI Deployment Intelligence System.** Designed and shipped a
-> production-grade Next.js 14 + TypeScript SaaS that evaluates real-world
+> production-ready Next.js 14 + TypeScript web app that evaluates real-world
 > workflows and decides whether to deploy an AI Agent, Copilot, workflow
-> automation, analytics view, or no AI at all. Architected a strict-JSON
-> prompting contract with server-side Anthropic Claude integration, schema
-> validation,
-> and graceful failure handling; built a premium dark-mode dashboard
-> (Tailwind, shadcn/ui, framer-motion) rendering fit score, recommendation,
-> risks/guardrails, ROI estimate, and a PM-ready PRD.
+> automation, analytics-only view, or no AI at all. Built a single-route
+> Anthropic Claude integration with tight timeouts, lenient JSON handling,
+> and a dark-mode dashboard surfacing fit score, recommendation, risks,
+> guardrails, ROI impact, and an MVP roadmap. Deployed on Vercel.
 
 ---
 
-## Demo Pitch Script (60 seconds)
+## 60-second demo pitch
 
-> "Most companies are spending millions on AI without asking the prior question:
-> *should this workflow be AI at all?* This is Decyde — an AI Deployment
-> Intelligence System. I describe a workflow — let's use a healthcare call
-> center — and click Analyze. Decyde is instructed to think like a senior AI
-> PM, a systems architect, and a risk reviewer. It breaks the workflow into
-> steps, flags the real bottlenecks, scores AI feasibility on a calibrated
-> 0-to-100 scale, and picks between AI Agent, Copilot, workflow automation,
-> analytics only, or do-not-automate. Notice it didn't default to 'build an
-> agent' — it recommended a copilot because the blast radius is too high for
-> autonomy. On the right I get risks, guardrails, a hours-saved ROI estimate,
-> and a PM-ready PRD with user stories, success metrics, and an MVP roadmap I
-> can paste into Notion tomorrow. The whole thing is Next.js 14 with a
-> server-side Anthropic Claude call and a strict JSON contract, deployed on
-> Vercel."
+> "Most teams are spending real money on AI without ever asking whether the
+> workflow should be AI in the first place. This is Decyde — an AI
+> Deployment Intelligence System. I describe a workflow — let's use a
+> healthcare call center — and click Analyze. Decyde calls Claude as a
+> senior AI PM, automation strategist, and risk reviewer. It scores AI fit
+> on a calibrated 0-to-100 scale and picks between AI Agent, Copilot,
+> workflow automation, analytics only, or do-not-automate. Notice it didn't
+> default to 'build an agent' — it recommended a copilot because the blast
+> radius is too high for autonomy. On the right I get the bottlenecks,
+> risks paired with guardrails, an ROI read, and an MVP roadmap. The whole
+> thing is Next.js 14 with a server-side Anthropic Messages API call and a
+> strict-but-lenient JSON contract, deployable on Vercel."
 
 ---
 
 ## License
 
 MIT — use, fork, and ship.
+
+Repository: [https://github.com/brahmanaidu172001-hub/Decyde](https://github.com/brahmanaidu172001-hub/Decyde)

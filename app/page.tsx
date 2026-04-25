@@ -1,28 +1,78 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Brain, Github, ExternalLink } from 'lucide-react';
-import { DecydeForm } from '@/components/DecydeForm';
-import { ResultsDashboard } from '@/components/ResultsDashboard';
-import type { AnalyzeResponse, DecydeAnalysis, DecydeInput } from '@/lib/types';
+import type {
+  AnalyzeResponse,
+  DecydeAnalysis,
+  DecydeInput,
+} from '@/lib/types';
 
-export default function HomePage() {
+const SAMPLES: Record<string, DecydeInput> = {
+  'Healthcare Call Center': {
+    workflowDescription:
+      'Inbound patient calls for appointment scheduling, prescription refills, and insurance questions.',
+    industry: 'Healthcare',
+    currentProcess:
+      '20 agents handle ~4000 calls/week. Average handle time 7 minutes. Scheduling and refills happen in the EHR; insurance questions require manual lookup in payer portals.',
+    painPoint:
+      'Long queues at peak hours; agents repeatedly answer the same 15 questions; after-hours coverage is expensive.',
+    desiredOutcome:
+      'Cut average handle time by 30% and deflect routine calls to self-service while preserving HIPAA compliance.',
+  },
+  'Finance Month-End Close': {
+    workflowDescription:
+      'Consolidate and reconcile accounts across 6 subsidiaries at month end.',
+    industry: 'Finance / FP&A',
+    currentProcess:
+      '4 accountants pull ledgers from NetSuite, reconcile in Excel, post adjusting journal entries, and produce a consolidated trial balance. Close takes 9 business days.',
+    painPoint:
+      'Manual reconciliation is error-prone; late adjustments cause rework; auditors flag repeat issues.',
+    desiredOutcome:
+      'Shorten close to 5 business days with a clear audit trail and fewer manual reconciliations.',
+  },
+  'Recruiting Workflow': {
+    workflowDescription:
+      'Screen inbound applicants for engineering roles and route qualified candidates to hiring managers.',
+    industry: 'Talent / HR',
+    currentProcess:
+      'Two recruiters triage ~600 applicants/month. Initial screen is resume keyword match plus a 15-minute phone screen. Qualified candidates route to a Greenhouse pipeline.',
+    painPoint:
+      'Recruiters spend 60% of time on unqualified resumes; hiring managers complain about slow turnaround; strong candidates drop off.',
+    desiredOutcome:
+      'Triple the share of recruiter time spent on qualified candidates without increasing false rejects.',
+  },
+};
+
+const EMPTY: DecydeInput = {
+  workflowDescription: '',
+  industry: '',
+  currentProcess: '',
+  painPoint: '',
+  desiredOutcome: '',
+};
+
+export default function Page() {
+  const [input, setInput] = useState<DecydeInput>(EMPTY);
   const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<DecydeAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<DecydeAnalysis | null>(null);
+  const [rawText, setRawText] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
-  async function handleAnalyze(input: DecydeInput) {
+  function update(k: keyof DecydeInput, v: string) {
+    setInput((prev) => ({ ...prev, [k]: v }));
+  }
+
+  async function analyze() {
     setLoading(true);
     setError(null);
     setAnalysis(null);
+    setRawText(null);
+    setWarning(null);
 
-    // Hard client-side timeout so the spinner can NEVER hang forever,
-    // even if the network stalls and the server never responds.
-    // Must be longer than the server-side ANTHROPIC_TIMEOUT_MS (default 45s).
-    const CLIENT_TIMEOUT_MS = 60_000;
+    // Client-side timeout must be longer than the 30s server timeout.
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), 35_000);
 
     try {
       const res = await fetch('/api/analyze', {
@@ -34,28 +84,26 @@ export default function HomePage() {
       const data = (await res.json().catch(() => null)) as
         | AnalyzeResponse
         | null;
+
       if (!data) {
         setError(
-          `Server returned a non-JSON response (HTTP ${res.status}). Check the server logs.`,
+          `Server returned a non-JSON response (HTTP ${res.status}).`,
         );
         return;
       }
       if (!data.ok) {
-        setError(data.error);
+        setError(data.error || 'Unknown error.');
         return;
       }
       setAnalysis(data.analysis);
+      setRawText(data.rawText);
+      if (data.warning) setWarning(data.warning);
     } catch (e) {
       const err = e as Error;
       if (err?.name === 'AbortError') {
-        setError(
-          'Request timed out after 60 seconds. The model may be slow or the server is unreachable — please try again.',
-        );
+        setError('Request timed out. Try a shorter workflow or test again.');
       } else {
-        setError(
-          err?.message ??
-            'Network error while contacting the Decyde API.',
-        );
+        setError(err?.message ?? 'Network error while contacting /api/analyze.');
       }
     } finally {
       clearTimeout(timeoutId);
@@ -64,107 +112,441 @@ export default function HomePage() {
   }
 
   return (
-    <main className="relative min-h-screen">
-      {/* Ambient grid background */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-grid-pattern bg-[size:48px_48px] opacity-40"
-      />
-
-      <Header />
-
-      <section className="container pb-24 pt-6">
-        <Hero />
-
-        <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="lg:sticky lg:top-6 lg:self-start">
-            <DecydeForm
-              onSubmit={handleAnalyze}
-              loading={loading}
-              error={error}
-            />
-          </div>
+    <main className="min-h-screen">
+      <header className="border-b border-white/5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div>
-            <ResultsDashboard analysis={analysis} loading={loading} />
+            <div className="text-lg font-semibold tracking-tight text-white">
+              Decyde
+            </div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-cyan-400/80">
+              AI Deployment Intelligence System
+            </div>
           </div>
+          <div className="hidden text-xs text-slate-400 sm:block">
+            Decide if AI should exist before you build it.
+          </div>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Decide if{' '}
+            <span className="text-cyan-400">AI should exist</span> before you
+            build it.
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm text-slate-400">
+            Describe a real-world workflow. Decyde evaluates whether it should
+            become an AI Agent, a Copilot, plain workflow automation, an
+            analytics view — or nothing at all.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <InputPanel
+            input={input}
+            update={update}
+            onAnalyze={analyze}
+            loading={loading}
+            loadSample={(name) => setInput(SAMPLES[name])}
+            reset={() => setInput(EMPTY)}
+          />
+          <ResultsPanel
+            loading={loading}
+            error={error}
+            analysis={analysis}
+            rawText={rawText}
+            warning={warning}
+          />
         </div>
       </section>
 
-      <Footer />
+      <footer className="border-t border-white/5 py-6">
+        <div className="mx-auto max-w-7xl px-6 text-xs text-slate-500">
+          Built with Next.js, TypeScript, Tailwind, and Anthropic Claude.
+        </div>
+      </footer>
     </main>
   );
 }
 
-function Header() {
+// ─────────────────────────────────────────────────────────────────────────────
+// Input panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+function InputPanel(props: {
+  input: DecydeInput;
+  update: (k: keyof DecydeInput, v: string) => void;
+  onAnalyze: () => void;
+  loading: boolean;
+  loadSample: (name: string) => void;
+  reset: () => void;
+}) {
+  const { input, update, onAnalyze, loading, loadSample, reset } = props;
+  const sampleNames = Object.keys(SAMPLES);
+  const disabled = loading || !input.workflowDescription.trim();
+
   return (
-    <header className="border-b border-white/5">
-      <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-electric-500/15 ring-1 ring-electric-500/30">
-            <Brain className="h-4 w-4 text-electric-400" />
-          </div>
-          <span className="text-sm font-semibold tracking-tight text-white">
-            Decyde
-          </span>
-          <span className="hidden text-xs text-muted-foreground sm:inline">
-            • AI Deployment Intelligence System
-          </span>
+    <div className="rounded-xl border border-white/5 bg-panel/60 p-5">
+      <div className="mb-4">
+        <div className="text-sm font-medium text-white">Workflow input</div>
+        <div className="mt-1 text-xs text-slate-500">
+          Start with a sample or enter your own.
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-electric-300"
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {sampleNames.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => loadSample(n)}
+            className="rounded-md border border-cyan-500/25 bg-cyan-500/5 px-3 py-1.5 text-xs text-cyan-300 transition hover:bg-cyan-500/10"
           >
-            <Github className="h-3.5 w-3.5" />
-            GitHub
-            <ExternalLink className="h-3 w-3" />
-          </a>
+            {n}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={reset}
+          className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-slate-400 transition hover:bg-white/5"
+        >
+          Clear
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        <Field label="Workflow description *">
+          <textarea
+            value={input.workflowDescription}
+            onChange={(e) => update('workflowDescription', e.target.value)}
+            rows={3}
+            placeholder="Describe the workflow you are considering for AI."
+            className={textareaCls}
+          />
+        </Field>
+        <Field label="Industry">
+          <input
+            value={input.industry ?? ''}
+            onChange={(e) => update('industry', e.target.value)}
+            placeholder="Healthcare, Finance, Talent/HR…"
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Current process">
+          <textarea
+            value={input.currentProcess ?? ''}
+            onChange={(e) => update('currentProcess', e.target.value)}
+            rows={3}
+            placeholder="How is this work done today? Volume, tools, owners."
+            className={textareaCls}
+          />
+        </Field>
+        <Field label="Primary pain point">
+          <textarea
+            value={input.painPoint ?? ''}
+            onChange={(e) => update('painPoint', e.target.value)}
+            rows={2}
+            placeholder="What is actually broken right now?"
+            className={textareaCls}
+          />
+        </Field>
+        <Field label="Desired outcome">
+          <textarea
+            value={input.desiredOutcome ?? ''}
+            onChange={(e) => update('desiredOutcome', e.target.value)}
+            rows={2}
+            placeholder="What does success look like in 90 days?"
+            className={textareaCls}
+          />
+        </Field>
+      </div>
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onAnalyze}
+        className="mt-5 inline-flex w-full items-center justify-center rounded-md bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {loading ? 'Analyzing…' : 'Analyze Workflow'}
+      </button>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-slate-300">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+const inputCls =
+  'w-full rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/30';
+const textareaCls = inputCls + ' resize-y';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Results panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ResultsPanel(props: {
+  loading: boolean;
+  error: string | null;
+  analysis: DecydeAnalysis | null;
+  rawText: string | null;
+  warning: string | null;
+}) {
+  const { loading, error, analysis, rawText, warning } = props;
+
+  return (
+    <div className="min-h-[480px] rounded-xl border border-white/5 bg-panel/60 p-5">
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <ErrorView error={error} />
+      ) : analysis ? (
+        <Analysis analysis={analysis} warning={warning} />
+      ) : rawText ? (
+        <RawFallback rawText={rawText} warning={warning} />
+      ) : (
+        <Empty />
+      )}
+    </div>
+  );
+}
+
+function Empty() {
+  return (
+    <div className="grid h-full place-items-center text-center">
+      <div>
+        <div className="text-sm font-medium text-slate-300">
+          No analysis yet
+        </div>
+        <div className="mt-1 text-xs text-slate-500">
+          Load a sample or describe a workflow, then click Analyze Workflow.
         </div>
       </div>
-    </header>
+    </div>
   );
 }
 
-function Hero() {
+function Loading() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="mx-auto max-w-3xl pt-14 text-center"
-    >
-      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-electric-500/30 bg-electric-500/5 px-3 py-1 text-xs text-electric-300">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-electric-400" />
-        Senior-PM-grade analysis, not a chatbot
+    <div className="grid h-full place-items-center text-center">
+      <div>
+        <div className="inline-block h-2 w-2 animate-pulse rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.8)]" />
+        <div className="mt-3 text-sm text-slate-300">
+          Evaluating workflow with Claude…
+        </div>
+        <div className="mt-1 text-xs text-slate-500">
+          Typically returns in under 10 seconds.
+        </div>
       </div>
-      <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-        Decide if <span className="text-gradient">AI should exist</span> before
-        you build it.
-      </h1>
-      <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-        Decyde evaluates any real-world workflow and tells you whether to build
-        an AI Agent, a Copilot, plain workflow automation, an analytics view — or
-        nothing at all.
-      </p>
-    </motion.div>
+    </div>
   );
 }
 
-function Footer() {
+function ErrorView({ error }: { error: string }) {
   return (
-    <footer className="border-t border-white/5 py-6">
-      <div className="container flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
-        <span>
-          © {new Date().getFullYear()} Decyde. Built with Next.js 14, TypeScript,
-          Tailwind, and Anthropic Claude.
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-          Production-ready deployment
-        </span>
+    <div>
+      <div className="inline-flex rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-red-300">
+        Error
       </div>
-    </footer>
+      <div className="mt-3 text-sm text-red-200">{error}</div>
+      <div className="mt-2 text-xs text-slate-500">
+        Check the server logs for details. Request IDs are printed as
+        [Decyde:xxxxx].
+      </div>
+    </div>
+  );
+}
+
+function RawFallback({
+  rawText,
+  warning,
+}: {
+  rawText: string;
+  warning: string | null;
+}) {
+  return (
+    <div>
+      <div className="inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-yellow-300">
+        Raw response
+      </div>
+      {warning && (
+        <div className="mt-3 text-sm text-yellow-200">{warning}</div>
+      )}
+      <pre className="mt-3 max-h-[460px] overflow-auto whitespace-pre-wrap rounded-md border border-white/5 bg-black/40 p-3 text-xs text-slate-300">
+        {rawText}
+      </pre>
+    </div>
+  );
+}
+
+function Analysis({
+  analysis,
+  warning,
+}: {
+  analysis: DecydeAnalysis;
+  warning: string | null;
+}) {
+  const score = typeof analysis.aiFitScore === 'number' ? analysis.aiFitScore : null;
+  const approach = analysis.recommendedApproach || '—';
+  const why = analysis.why || '';
+  const bottlenecks = analysis.keyBottlenecks ?? [];
+  const risks = analysis.risks ?? [];
+  const guardrails = analysis.guardrails ?? [];
+  const roi = analysis.roiImpact || '';
+  const roadmap = analysis.mvpRoadmap ?? [];
+
+  return (
+    <div className="space-y-5">
+      {warning && (
+        <div className="rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
+          {warning}
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)]">
+        <ScoreCard score={score} />
+        <ApproachCard approach={approach} why={why} />
+      </div>
+
+      <ListCard title="Key Bottlenecks" items={bottlenecks} />
+      <TwoColCard
+        leftTitle="Risks"
+        leftItems={risks}
+        rightTitle="Guardrails"
+        rightItems={guardrails}
+      />
+      <TextCard title="ROI / Impact" text={roi} />
+      <ListCard title="MVP Roadmap" items={roadmap} ordered />
+    </div>
+  );
+}
+
+function ScoreCard({ score }: { score: number | null }) {
+  const pct = Math.max(0, Math.min(100, score ?? 0));
+  const hue =
+    pct >= 70
+      ? 'text-emerald-300'
+      : pct >= 50
+        ? 'text-cyan-300'
+        : pct >= 30
+          ? 'text-yellow-300'
+          : 'text-red-300';
+  return (
+    <div className="rounded-lg border border-white/5 bg-black/30 p-4">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+        AI Fit Score
+      </div>
+      <div className={`mt-1 text-4xl font-semibold ${hue}`}>
+        {score ?? '—'}
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+        <div
+          className="h-full rounded-full bg-cyan-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ApproachCard({
+  approach,
+  why,
+}: {
+  approach: string;
+  why: string;
+}) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-black/30 p-4">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+        Recommended Approach
+      </div>
+      <div className="mt-1 text-xl font-semibold text-white">{approach}</div>
+      {why && <div className="mt-2 text-sm text-slate-300">{why}</div>}
+    </div>
+  );
+}
+
+function ListCard({
+  title,
+  items,
+  ordered = false,
+}: {
+  title: string;
+  items: string[];
+  ordered?: boolean;
+}) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-white/5 bg-black/30 p-4">
+      <div className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">
+        {title}
+      </div>
+      {ordered ? (
+        <ol className="list-decimal space-y-1.5 pl-5">
+          {items.map((it, i) => (
+            <li key={i} className="text-sm text-slate-200">
+              {it}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <ul className="list-disc space-y-1.5 pl-5">
+          {items.map((it, i) => (
+            <li key={i} className="text-sm text-slate-200">
+              {it}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function TwoColCard(props: {
+  leftTitle: string;
+  leftItems: string[];
+  rightTitle: string;
+  rightItems: string[];
+}) {
+  const { leftTitle, leftItems, rightTitle, rightItems } = props;
+  if (
+    (!leftItems || leftItems.length === 0) &&
+    (!rightItems || rightItems.length === 0)
+  ) {
+    return null;
+  }
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <ListCard title={leftTitle} items={leftItems} />
+      <ListCard title={rightTitle} items={rightItems} />
+    </div>
+  );
+}
+
+function TextCard({ title, text }: { title: string; text: string }) {
+  if (!text) return null;
+  return (
+    <div className="rounded-lg border border-white/5 bg-black/30 p-4">
+      <div className="mb-2 text-[10px] uppercase tracking-wider text-slate-500">
+        {title}
+      </div>
+      <div className="text-sm text-slate-200">{text}</div>
+    </div>
   );
 }
