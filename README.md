@@ -4,6 +4,8 @@
 
 
 
+
+
 Decyde is an AI Deployment Intelligence System. You describe a real-worldbusiness workflow, and Decyde tells you whether it should become an AIAgent, a Copilot, a Workflow Automation, an Analytics-Onlysurface — or whether it should not be automated at all.
 
 ## Why it matters
