@@ -6,10 +6,14 @@
 
 
 
-Decyde is an AI Deployment Intelligence System. You describe a real-worldbusiness workflow, and Decyde tells you whether it should become an AIAgent, a Copilot, a Workflow Automation, an Analytics-Onlysurface — or whether it should not be automated at all.
+What it does
+Decyde answers the question companies avoid asking before they build: should AI actually exist here?
+You describe a real-world business workflow — the people, tools, pain points, and desired outcomes. Decyde evaluates whether it should become an AI Agent, a Copilot, plain Workflow Automation, an Analytics-Only surface, or nothing at all — and tells you exactly why, with an AI Fit Score and a phased MVP roadmap.
+The model is skeptical by design. It pushes back against AI for its own sake and defaults to the simplest system that works.
 
-## Why it matters
-The future of decision-making lies in our ability to harness data effectively. In a world filled with information, Decyde provides a platform to streamline that process and help individuals and organizations make informed choices.
+Why it matters
+Most AI initiatives fail not because the technology is wrong, but because the decision to build was never properly interrogated. Decyde is the intelligence layer that runs before the sprint — not after the budget is spent.
+
 
 ## Features
 - **User-Friendly Interface**: Easy navigation and interaction for all users.
